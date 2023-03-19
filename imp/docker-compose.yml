@@ -49,7 +49,7 @@ services:
     environment:
       SPARK_MASTER: spark://spark-master:7077
       SPARK_HOME: /spark
-    command: start-notebook.sh --NotebookApp.token=''
+    command: jupyter-notebook --ip=0.0.0.0 --no-browser --allow-root --NotebookApp.token=''
     depends_on:
       - spark-master
       - spark-worker

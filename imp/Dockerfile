@@ -30,5 +30,6 @@ ENV PATH $PATH:$SPARK_HOME/bin
 EXPOSE 8888 8080
 
 # Start Jupyter notebook by default
-CMD ["./start-notebook.sh"]
+CMD ["/home/ubuntu/start-notebook.sh"]
+
 
