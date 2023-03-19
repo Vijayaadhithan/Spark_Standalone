@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+  spark-master:
+    image: mysparkimage:latest
+    build: .
+    container_name: spark-master
+    command: /spark/bin/spark-class org.apache.spark.deploy.master.Master -h spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    environment:
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: 7077
+      SPARK_MASTER_WEBUI_PORT: 8080
+
+  spark-worker:
+    image: mysparkimage:latest
+    build: .
+    container_name: spark-worker
+    command: /spark/bin/spark-class org.apache.spark.deploy.worker.Worker -h spark-worker spark://spark-master:7077
+    environment:
+      SPARK_WORKER_CORES: 4
+      SPARK_WORKER_MEMORY: 4g
+      SPARK_WORKER_WEBUI_PORT: 8081
+    depends_on:
+      - spark-master
+
+  spark-worker-2:
+    image: mysparkimage:latest
+    build: .
+    container_name: spark-worker-2
+    command: /spark/bin/spark-class org.apache.spark.deploy.worker.Worker -h spark-worker-2 spark://spark-master:7077
+    environment:
+      SPARK_WORKER_CORES: 4
+      SPARK_WORKER_MEMORY: 4g
+      SPARK_WORKER_WEBUI_PORT: 8082
+    depends_on:
+      - spark-master
+
+  jupyter:
+    image: myspeakimage:latest
+    build: .
+    container_name: jupyter
+    volumes:
+      - /home/ubuntu/notebooks:/home/jovyan/work
+    ports:
+      - "8888:8888"
+    environment:
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_HOME: /spark
+    command: start-notebook.sh --NotebookApp.token=''
+    depends_on:
+      - spark-master
+      - spark-worker
+      - spark-worker-2
