@@ -1,0 +1,105 @@
+version: "3"
+
+services:
+  namenode:
+    hostname: namenode
+    image: myhadoopimage:latest
+    build: .
+    container_name: namenode
+    command: /start-hadoop.sh && tail -f /dev/null
+    ports:
+      - "9000:9000"
+      - "9870:9870"
+    volumes:
+      - ./data/hdfs/namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=myhadoopcluster
+
+  datanode:
+    hostname: datanode
+    image: myhadoopimage:latest
+    build: .
+    container_name: datanode
+    command: /start-hadoop.sh && tail -f /dev/null
+    volumes:
+      - ./data/hdfs/datanode:/hadoop/dfs/data
+    environment:
+      - CLUSTER_NAME=myhadoopcluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+
+  spark-master:
+    hostname: sparkmaster
+    image: mysparkimage:latest
+    build: .
+    container_name: spark-master
+    command: /spark/bin/spark-class org.apache.spark.deploy.master.Master -h spark-master
+    ports:
+      - "9090:8080"
+      - "7077:7077"
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_WORKLOAD=master
+
+  spark-worker:
+    image: mysparkimage:latest
+    build: .
+    container_name: spark-worker
+    command: /spark/bin/spark-class org.apache.spark.deploy.worker.Worker -h spark-worker spark://spark-master:7077
+    ports:
+      - "9091:8080"
+      - "7000:7000"
+    environment:
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=4g
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker
+      - HADOOP_CONF_DIR=/etc/hadoop
+    depends_on:
+      - spark-master
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - /usr/local/hadoop/etc/hadoop:/etc/hadoop
+
+  spark-worker-2:
+    image: mysparkimage:latest
+    build: .
+    container_name: spark-worker-2
+    command: /spark/bin/spark-class org.apache.spark.deploy.worker.Worker -h spark-worker-2 spark://spark-master:7077
+    ports:
+      - "9092:8080"
+      - "7001:7000"
+    environment:
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=4g
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-2
+      - HADOOP_CONF_DIR=/etc/hadoop
+    depends_on:
+      - spark-master
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - /usr/local/hadoop/etc/hadoop:/etc/hadoop
+
+  jupyter:
+    image: mysparkimage:latest
+    build: .
+    container_name: jupyter
+    volumes:
+      - /home/ubuntu/notebooks:/home
+      - /usr/local/hadoop/etc/hadoop:/etc/hadoop
+    ports:
+      - "8888:8888"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_HOME=/spark
+      - HADOOP_CONF_DIR=/etc/hadoop
+    command: jupyter-notebook --ip=0.0.0.0 --no-browser --allow-root --NotebookApp.token=''
+    depends_on:
+      - spark-master
+      - spark-worker
+      - spark-worker-2
