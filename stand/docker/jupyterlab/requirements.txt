@@ -1,5 +1,0 @@
-pyspark
-notebook
-sys
-glob
-h5py
