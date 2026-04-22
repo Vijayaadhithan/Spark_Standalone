@@ -1,0 +1,5 @@
+streamlit>=1.44,<2
+pyspark>=3.5,<3.6; python_version < "3.14"
+pyspark>=4.1,<4.2; python_version >= "3.14"
+pandas>=2.2,<3
+h5py>=3.11,<4
